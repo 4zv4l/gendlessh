@@ -1,4 +1,4 @@
-# endlessh
+# gendlessh
 
 Endlessh in Go
 

@@ -14,6 +14,10 @@ Usage of ./endlessh:
         Max amount of connected clients (default 50)
 ```
 
+## install
+
+You can install `endlessh` by doing: `go install github.com/4zv4l/endlessh@latest`.
+
 ## build
 
 Simply `clone` this repo then `go build .`.

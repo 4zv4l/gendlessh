@@ -1,0 +1,58 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"log/slog"
+	"math/rand/v2"
+	"net"
+	"time"
+)
+
+func main() {
+	var (
+		addr      = flag.String("addr", "0.0.0.0:2222", "Bind to this address")
+		maxClient = flag.Uint("maxclient", 50, "Max amount of connected clients")
+		delay     = flag.Uint("delay", 10, "Number of seconds to wait betweem each write")
+	)
+	flag.Parse()
+
+	listener, err := net.Listen("tcp", *addr)
+	if err != nil {
+		panic(err)
+	}
+	slog.Info("Listening", "addr", listener.Addr(), "maxClient", *maxClient, "delay", *delay)
+
+	grp := make(chan struct{}, *maxClient)
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			continue
+		}
+		select {
+		case grp <- struct{}{}:
+			slog.Info("New Victim", "addr", conn.RemoteAddr())
+			go tarpit(conn, *delay, grp)
+		default:
+			slog.Warn("Server full, dropping conn", "addr", conn.RemoteAddr())
+			conn.Close()
+		}
+	}
+}
+
+func tarpit(conn net.Conn, delay uint, grp <-chan struct{}) {
+	start := time.Now()
+	defer func() {
+		slog.Info("Victim escaped", "addr", conn.RemoteAddr(), "duration", time.Since(start))
+		conn.Close()
+		<-grp
+	}()
+
+	for {
+		_, err := fmt.Fprintf(conn, "%x\r\n", rand.Uint64())
+		if err != nil {
+			return
+		}
+		time.Sleep(time.Duration(delay) * time.Second)
+	}
+}

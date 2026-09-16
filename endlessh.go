@@ -43,7 +43,7 @@ func main() {
 func tarpit(conn net.Conn, delay uint, grp <-chan struct{}) {
 	start := time.Now()
 	defer func() {
-		slog.Info("Victim escaped", "addr", conn.RemoteAddr(), "duration", fmt.Sprintf("%.2f", time.Since(start).Minutes()))
+		slog.Info("Victim escaped", "addr", conn.RemoteAddr(), "duration", fmt.Sprintf("%d", time.Since(start).Seconds()))
 		conn.Close()
 		<-grp
 	}()

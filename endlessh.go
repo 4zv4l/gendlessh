@@ -11,9 +11,9 @@ import (
 
 func main() {
 	var (
-		addr      = flag.String("addr", "0.0.0.0:2222", "Bind to this address")
-		maxClient = flag.Uint("maxclient", 50, "Max amount of connected clients")
-		delay     = flag.Uint("delay", 10, "Number of seconds to wait betweem each write")
+		addr                = flag.String("addr", "0.0.0.0:2222", "Bind to this address")
+		maxConcurrentClient = flag.Uint("maxclient", 50, "Max amount of connected clients")
+		delay               = flag.Uint("delay", 10, "Number of seconds to wait betweem each write")
 	)
 	flag.Parse()
 
@@ -21,9 +21,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	slog.Info("Listening", "addr", listener.Addr(), "maxClient", *maxClient, "delay", *delay)
+	slog.Info("Listening", "addr", listener.Addr(), "maxConcurrentClient", *maxConcurrentClient, "delay", *delay)
 
-	grp := make(chan struct{}, *maxClient)
+	grp := make(chan struct{}, *maxConcurrentClient)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -43,7 +43,7 @@ func main() {
 func tarpit(conn net.Conn, delay uint, grp <-chan struct{}) {
 	start := time.Now()
 	defer func() {
-		slog.Info("Victim escaped", "addr", conn.RemoteAddr(), "duration", time.Since(start))
+		slog.Info("Victim escaped", "addr", conn.RemoteAddr(), "duration", fmt.Sprintf("%.2f", time.Since(start).Minutes()))
 		conn.Close()
 		<-grp
 	}()

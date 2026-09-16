@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"math/rand/v2"
 	"net"
@@ -48,11 +49,21 @@ func tarpit(conn net.Conn, delay uint, grp <-chan struct{}) {
 		<-grp
 	}()
 
+	clientDropped := make(chan struct{})
+	go func() {
+		io.Copy(io.Discard, conn)
+		close(clientDropped)
+	}()
+
 	for {
 		_, err := fmt.Fprintf(conn, "%x\r\n", rand.Uint64())
 		if err != nil {
 			return
 		}
-		time.Sleep(time.Duration(delay) * time.Second)
+		select {
+		case <-time.After(time.Duration(delay) * time.Second):
+		case <-clientDropped:
+			return
+		}
 	}
 }
